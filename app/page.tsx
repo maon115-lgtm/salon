@@ -1,4 +1,3 @@
-import Salon from './workspace';
-import { requireChatGPTUser } from './chatgpt-auth';
-export const dynamic='force-dynamic';
-export default async function Home(){await requireChatGPTUser('/');return <Salon/>}
+import Landing from './landing';
+import {redirect} from 'next/navigation';
+export default async function Home({searchParams}:{searchParams:Promise<{workspace?:string}>}){const {workspace}=await searchParams;if(workspace)redirect('/dashboard?workspace='+encodeURIComponent(workspace));return <Landing/>}

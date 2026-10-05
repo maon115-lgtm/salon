@@ -1,0 +1,14 @@
+import assert from 'node:assert/strict';
+const base='http://127.0.0.1:5173';
+let r=await fetch(base+'/api/workspace');assert.equal(r.status,401);
+r=await fetch(base+'/signin-with-chatgpt?return_to=/',{redirect:'manual'});const cookie=r.headers.get('set-cookie').split(';')[0];
+const headers={'Cookie':cookie,'Content-Type':'application/json'};
+const post=(body,extra={})=>fetch(base+'/api/workspace',{method:'POST',headers:{...headers,...extra},body:JSON.stringify(body)});
+assert.equal((await post(null)).status,400);
+assert.equal((await post({revision:0},{Origin:'https://invalid.example'})).status,403);
+r=await fetch(base+'/api/workspace',{headers});let j=await r.json();assert.equal(r.status,200);
+const id='qa-'+Date.now();const action={type:'saveCustomer',data:{id,name:'اختبار الحفظ',phone:'',notes:'اختبار تلقائي مؤقت'}};
+const results=await Promise.all([post({revision:j.revision,action}),post({revision:j.revision,action})]);assert.deepEqual(results.map(x=>x.status).sort(),[200,409]);
+r=await fetch(base+'/api/workspace',{headers});j=await r.json();assert.equal(j.state.customers.filter(c=>c.id===id).length,1);
+r=await post({revision:j.revision,action:{type:'deleteCustomer',id}});assert.equal(r.status,200);
+console.log('PASS: anonymous access, malformed body, origin rejection, concurrent write conflict, persisted reload, cleanup (6 checks)');

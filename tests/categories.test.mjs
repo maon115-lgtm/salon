@@ -1,0 +1,18 @@
+import {test} from 'node:test';
+import assert from 'node:assert/strict';
+import {categories,branchState} from '../lib/categories.mjs';
+import {availableSlots,publicBranch,customerReservation,clientKey} from '../lib/catalog.mjs';
+const now=new Date('2026-10-06T08:00:00+03:00');
+const ready=()=>{const s=branchState('spa','سبا اختبار');s.services[0].active=true;s.services[0].price=15000;s.staff=[{id:'staff',name:'متخصص اختبار',role:'عناية',start:'09:00',end:'18:00',active:true}];return s};
+const input={name:'عميل اختبار',phone:'0501234567',serviceId:'template-spa-0',staffId:'staff',date:'2026-10-07',time:'09:00'};
+test('three distinct categories and service templates',()=>{assert.equal(categories.length,3);const s=categories.map(c=>branchState(c.id,'فرع'));assert.notDeepEqual(s[0].services,s[1].services);assert.notDeepEqual(s[1].services,s[2].services)});
+test('new branches empty and templates inactive with no assumed prices',()=>{const s=branchState('women','فرع');assert.equal(s.bookings.length,0);assert.equal(s.customers.length,0);assert.equal(s.demo,false);assert.ok(s.services.every(s=>s.price===0&&!s.active))});
+test('branch data structures independent',()=>{const a=branchState('men','أول'),b=branchState('men','ثان');a.services[0].name='مختلف';assert.notEqual(a.services[0].name,b.services[0].name)});
+test('invalid category rejected',()=>assert.throws(()=>branchState('bad','فرع')));
+test('only active priced services appear in catalog, no private data',()=>{const s=ready();s.customers=[{name:'PRIVATE'}];const r=publicBranch({id:'b',category:'spa',name:'فرع',city:'الرياض',payload:JSON.stringify(s)});assert.equal(r.services.length,1);assert.ok(!JSON.stringify(r).includes('PRIVATE'));assert.equal(r.staff,undefined);assert.equal(r.users,undefined)});
+test('slots respect hours and service buffer',()=>{const s=ready();const slots=availableSlots(s,s.services[0].id,'2026-10-07',now);assert.equal(slots[0].time,'09:00');assert.ok(!slots.some(s=>s.time==='17:00'))});
+test('calendar dates and past slots guarded',()=>{assert.throws(()=>availableSlots(ready(),input.serviceId,'2026-02-30',now));assert.deepEqual(availableSlots(ready(),input.serviceId,'2026-10-05',now),[])});
+test('booking generated IDs ignore client attempts and preserve original state',()=>{const s=ready();const r=customerReservation(s,{...input,id:'fake',customerId:'someone-else'},'mine',now);assert.equal(r.state.bookings[0].customerId,'mine');assert.notEqual(r.id,'fake');assert.equal(s.bookings.length,0)});
+test('reserved time unavailable including buffer',()=>{const r=customerReservation(ready(),input,'mine',now);const slots=availableSlots(r.state,input.serviceId,input.date,now);assert.ok(!slots.some(s=>['09:00','10:00'].includes(s.time)));assert.throws(()=>customerReservation(r.state,input,'other',now))});
+test('identity linkage stable and distinct',async()=>{const a=await clientKey('one');assert.equal(a,await clientKey('one'));assert.notEqual(a,await clientKey('two'));assert.ok(a.length<=80)});
+test('inactive service cannot book',()=>{const s=ready();s.services[0].active=false;assert.throws(()=>customerReservation(s,input,'mine',now))});

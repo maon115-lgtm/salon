@@ -1,2 +1,3 @@
 import { env } from "cloudflare:workers";
-export function database(){if(!env.DB)throw new Error("DB unavailable");return env.DB}
+import { configuredStore } from './store.mjs';
+export function database(){return configuredStore(env)}

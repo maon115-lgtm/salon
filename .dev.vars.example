@@ -1,0 +1,5 @@
+# Copy to .dev.vars locally, then fill from your own Supabase project.
+# This example contains no credentials. Never commit .dev.vars.
+DB_PROVIDER=supabase
+SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+SUPABASE_SECRET_KEY=sb_secret_REPLACE_WITH_SERVER_SECRET

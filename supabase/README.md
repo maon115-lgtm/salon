@@ -26,6 +26,8 @@ Local SQLite data is preserved and is not automatically uploaded. Decide whether
 
 ## Validation
 
+After configuring server secrets, run `npm run db:check:supabase`. This makes a read-only authenticated RPC request against the configured project and reports success only after the actual response. It prints no keys or customer records. It does not prove write access, concurrent booking behavior or deployment.
+
 `node --test tests/supabase.test.mjs` runs the actual SQL migration and adapter against PGlite (PostgreSQL in memory), checks grants/RLS, transaction rollback, stale revisions, branch filters and unavailable bookings. PGlite uses one connection: these tests do not establish multi-connection race behavior or verify a live Supabase connection.
 
 `node --test tests/domain.test.mjs tests/access.test.mjs tests/categories.test.mjs` covers application rules and authorization. Existing API integration tests target the local D1 preview and must not be run against a live Supabase project.

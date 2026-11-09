@@ -22,6 +22,19 @@ test('Network errors hide credentials and database details without retrying',asy
   assert.equal(attempts,1);
 });
 
+test('Redirect responses are rejected without forwarding the server secret',async()=>{
+  const calls=[];
+  const store=supabaseStore('https://example.supabase.co','sb_secret_test',async(url,options)=>{
+    calls.push(String(url));
+    // Cloudflare Workers rejects redirect:error before sending a request.
+    if(!['manual','follow'].includes(options.redirect))throw Error('Unsupported Worker redirect mode');
+    assert.equal(options.redirect,'manual');
+    return new Response(null,{status:307,headers:{Location:'https://other.example/collect'}});
+  });
+  await assert.rejects(store.getWorkspace('x'));
+  assert.deepEqual(calls,['https://example.supabase.co/rest/v1/rpc/salon_store']);
+});
+
 test('PostgreSQL migration, server adapter and database permissions',async t=>{
   const pg=new PGlite();
   try {
@@ -43,7 +56,7 @@ test('PostgreSQL migration, server adapter and database permissions',async t=>{
     const store=supabaseStore('https://example.supabase.co','sb_secret_test',async(url,options)=>{
       assert.equal(String(url),'https://example.supabase.co/rest/v1/rpc/salon_store');
       assert.equal(options.headers.apikey,'sb_secret_test');
-      assert.equal(options.redirect,'error');
+      assert.equal(options.redirect,'manual');
       const body=JSON.parse(options.body);
       return Response.json(await rpc(body.p_operation,body.p_args));
     });

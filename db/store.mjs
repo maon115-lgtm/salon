@@ -44,7 +44,8 @@ export function supabaseStore(url,key,fetcher=fetch) {
       response=await fetcher(new URL('/rest/v1/rpc/salon_store',base),{
         method:'POST',headers:{apikey:key,'Content-Type':'application/json'},
         body:JSON.stringify({p_operation:operation,p_args:args}),
-        signal:AbortSignal.timeout(15000),redirect:'error',cache:'no-store'
+        // Workers supports manual/follow only. Manual keeps the secret on this origin.
+        signal:AbortSignal.timeout(15000),redirect:'manual',cache:'no-store'
       });
     } catch { throw new Error('تعذر الاتصال بقاعدة البيانات. حدّث البيانات قبل إعادة المحاولة.'); }
     if(!response.ok)throw new Error('تعذر تنفيذ العملية في قاعدة البيانات. تحقق من إعداد الاتصال.');

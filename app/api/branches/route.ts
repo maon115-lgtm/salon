@@ -4,7 +4,7 @@ import {getChatGPTUser} from '@/app/chatgpt-auth';
 import {branchState} from '@/lib/categories.mjs';
 export const dynamic='force-dynamic';
 const json=(x:unknown,s=200)=>Response.json(x,{status:s,headers:{'Cache-Control':'no-store'}});
-export async function GET(){try{const u=await getChatGPTUser();if(!u)return json({error:'يلزم تسجيل الدخول'},401);const result=await database().listBranches(u.userId);const legacy=await database().getWorkspace(u.userId);return json({branches:result,legacy:!!legacy})}catch{return json({error:'تعذر تحميل الفروع'},503)}}
+export async function GET(){try{const u=await getChatGPTUser();if(!u)return json({error:'يلزم تسجيل الدخول'},401);const result=await database().listBranches(u.userId);const legacy=await database().getWorkspace(u.userId);return json({branches:result,legacy:!!legacy})}catch(e){console.error('branch storage read failed',e);return json({error:'تعذر تحميل الفروع'},503)}}
 export async function POST(req:Request){try{const u=await getChatGPTUser();if(!u)return json({error:'يلزم تسجيل الدخول'},401);if(req.headers.get('origin')&&req.headers.get('origin')!==new URL(req.url).origin)return json({error:'مصدر غير مسموح'},403);if(!req.headers.get('content-type')?.includes('application/json'))return json({error:'طلب غير صالح'},415);const raw=await req.text();if(raw.length>5000)return json({error:'الطلب كبير جدًا'},413);const b=JSON.parse(raw);const db=database();
  if(b.type==='visibility'){
  const id=z.string().max(80).parse(b.id),listed=z.boolean().parse(b.listed);
